@@ -14,16 +14,16 @@ import matplotlib.pyplot as plt
 import numpy as np
 from collections import Counter
 from collections import defaultdict
+from gensim import corpora
 from nltk import bigrams
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from nltk.stem.wordnet import WordNetLemmatizer
+from sklearn import metrics
+from sklearn.cluster import KMeans
 from tweepy import Stream
 from tweepy import OAuthHandler
 from tweepy.streaming import StreamListener
-from gensim import corpora
-from sklearn import metrics
-from sklearn.cluster import KMeans
 
 emoticons_str = r"""
 	(?:
@@ -92,14 +92,13 @@ def processData(fname):
 	bow_corpus = [dictionary.doc2bow(doc) for doc in texts]
 
 	## apply LDA
-	lda = gensim.models.ldamodel.LdaModel(bow_corpus, num_topics=3, id2word = dictionary, passes=50)
+	lda = gensim.models.ldamodel.LdaModel(bow_corpus, num_topics=2, id2word = dictionary, passes=20)
 	lda_corpus = lda[bow_corpus]
 
 	return lda_corpus
 
 def clusttering(lda_corpus):
 
-	print lda_corpus
 	x = [x[1] for x,_ in lda_corpus]
 	y = [y[1] for _,y in lda_corpus]
 	x = np.array(x)
@@ -109,7 +108,7 @@ def clusttering(lda_corpus):
 
 	km = KMeans(n_clusters=2, init='k-means++', max_iter=100, n_init=4, verbose=False, random_state=10)
 	km.fit(matrix)
-	pprint(km.labels_)
+	print(km.labels_)
 
 	plt.title('Documents in the LDA space')
 	plt.xlabel('Dimension / Topic 1')
@@ -120,6 +119,7 @@ def clusttering(lda_corpus):
 	colors = plt.cm.Spectral(np.linspace(0, 1, len(unique_labels)))
 	xy = matrix[km.labels_==0]
 	plt.scatter(xy[:,0], xy[:,1], color='r')
+	plt.show()
 
 	silhouette_coefficient = metrics.silhouette_score(matrix, km.labels_, sample_size=1000)
 	print('Silhouette Coefficient:', silhouette_coefficient)
