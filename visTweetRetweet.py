@@ -4,7 +4,6 @@ from tweepy import Cursor
 import json
 import pandas as pd
 import matplotlib as mpl
-#mpl.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 from matplotlib import rcParams

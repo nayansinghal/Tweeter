@@ -1,3 +1,9 @@
+###################
+
+# python processData.py "filepath"
+
+################
+
 import tweepy
 import time
 import argparse
@@ -80,7 +86,7 @@ exclude = set(string.punctuation)
 lemma = WordNetLemmatizer()
 
 def clean(s):
-
+	s = s.lower()
 	stop_free = " ".join([i for i in s.lower().split() if i not in stop])
 	punc_free = ''.join(ch for ch in stop_free if ch not in exclude)
 	normalized = " ".join(lemma.lemmatize(word) for word in punc_free.split())
