@@ -10,6 +10,7 @@ import operator
 import gensim
 import pprint
 import unicodedata
+import langid
 import matplotlib.pyplot as plt
 import numpy as np
 from collections import Counter
@@ -50,7 +51,13 @@ emoticon_re = re.compile(r'^'+emoticons_str+'$', re.VERBOSE | re.IGNORECASE)
  
 def tokenize(s):
 	return tokens_re.findall(s)
- 
+
+def filter_lang(lang, document):
+
+	doclang = langid.classify(document)
+	return doclang[0]
+	##return [documents[k] for k in range(len(documents)) if doclang[k][0] == lang
+
 def preprocess(s, lowercase=False):
 
 	print s
@@ -59,7 +66,16 @@ def preprocess(s, lowercase=False):
 		tokens = [token if emoticon_re.search(token) else token.lower() for token in tokens]
 	return tokens
 
-stop = set(stopwords.words('english'))
+# Remove stop words
+stoplist_tw=['amp','get','got','hey','hmm','hoo','hop','iep','let','ooo','par',
+            'pdt','pln','pst','wha','yep','yer','aest','didn','nzdt','via',
+            'one','com','new','like','great','make','top','awesome','best',
+            'good','wow','yes','say','yay','would','thanks','thank','going',
+            'new','use','should','could','best','really','see','want','nice',
+			'while','know', 'rt', 'via', 'it', 'u']
+
+punctuation = list(string.punctuation)
+stop = set(stopwords.words('english') + stoplist_tw) 
 exclude = set(string.punctuation)
 lemma = WordNetLemmatizer()
 
@@ -72,9 +88,6 @@ def clean(s):
 
 def processData(fname):
 
-	punctuation = list(string.punctuation)
-	stop = stopwords.words('english') + punctuation + ['rt', 'via', 'RT']
-
 	texts = []
 	with open(fname, 'r') as f:
 		count_all = Counter()
@@ -84,9 +97,20 @@ def processData(fname):
 				tweet = json.loads(line)
 			except:
 				continue
-			# Create a list with all the terms
-			texts.append(clean(tweet['text']).split())
 
+			# Create a list with all the terms
+			if filter_lang('en', tweet['text']) == "en":
+				texts.append(clean(tweet['text']).split())
+
+	token_frequency = defaultdict(int)
+	# count all token
+	for doc in texts:
+		for token in doc:
+			token_frequency[token] += 1
+
+	# keep words that occur more than once
+	texts = [ [token for token in doc if token_frequency[token] > 1] for doc in texts ]
+	
 	# Creating the term dictionary of our courpus, where every unique term is assigned an index.
 	dictionary = corpora.Dictionary(texts)
 	dictionary.save('data/dictionary.dict')
@@ -101,7 +125,6 @@ def processData(fname):
 	lda.save('data/document.lda')
 	print("lda saved in %s " % 'data/document.lda')
 
-	print list(lda_corpus)
 	return lda_corpus
 
 def clusttering(lda_corpus):
