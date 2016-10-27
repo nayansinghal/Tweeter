@@ -91,7 +91,7 @@ def processData(fname):
 	texts = []
 	count = 0
 	with open(fname, 'r') as f:
-		
+
 		for line in f:
 			try:
 				tweet = json.loads(line)
@@ -111,17 +111,17 @@ def processData(fname):
 	
 	# Creating the term dictionary of our courpus, where every unique term is assigned an index.
 	dictionary = corpora.Dictionary(texts)
-	dictionary.save('data/dictionary.dict')
+	dictionary.save('output/dictionary.dict')
 
 	bow_corpus = [dictionary.doc2bow(doc) for doc in texts]
-	corpora.MmCorpus.serialize('data/corpus.mm', bow_corpus)
+	corpora.MmCorpus.serialize('output/corpus.mm', bow_corpus)
 
 	## apply LDA
 	lda = gensim.models.ldamodel.LdaModel(bow_corpus, num_topics=3, id2word = dictionary, passes=20)
 	lda_corpus = lda[bow_corpus]
 
-	lda.save('data/document.lda')
-	print("lda saved in %s " % 'data/document.lda')
+	lda.save('output/document.lda')
+	print("lda saved in %s " % 'output/document.lda')
 
 	return lda_corpus
 
