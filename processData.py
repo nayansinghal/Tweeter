@@ -68,10 +68,10 @@ def preprocess(s, lowercase=False):
 
 # Remove stop words
 stoplist_tw=['amp','get','got','hey','hmm','hoo','hop','iep','let','ooo','par',
-            'pdt','pln','pst','wha','yep','yer','aest','didn','nzdt','via',
-            'one','com','new','like','great','make','top','awesome','best',
-            'good','wow','yes','say','yay','would','thanks','thank','going',
-            'new','use','should','could','best','really','see','want','nice',
+			'pdt','pln','pst','wha','yep','yer','aest','didn','nzdt','via',
+			'one','com','new','like','great','make','top','awesome','best',
+			'good','wow','yes','say','yay','would','thanks','thank','going',
+			'new','use','should','could','best','really','see','want','nice',
 			'while','know', 'rt', 'via', 'it', 'u']
 
 punctuation = list(string.punctuation)
@@ -89,18 +89,16 @@ def clean(s):
 def processData(fname):
 
 	texts = []
+	count = 0
 	with open(fname, 'r') as f:
-		count_all = Counter()
-
+		
 		for line in f:
 			try:
 				tweet = json.loads(line)
+				if filter_lang('en', tweet['text']) == "en":
+					texts.append(clean(tweet['text']).split())
 			except:
 				continue
-
-			# Create a list with all the terms
-			if filter_lang('en', tweet['text']) == "en":
-				texts.append(clean(tweet['text']).split())
 
 	token_frequency = defaultdict(int)
 	# count all token
