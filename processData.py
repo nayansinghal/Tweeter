@@ -89,24 +89,30 @@ def processData(fname):
 
 	# Creating the term dictionary of our courpus, where every unique term is assigned an index.
 	dictionary = corpora.Dictionary(texts)
+	dictionary.save('data/dictionary.dict')
+
 	bow_corpus = [dictionary.doc2bow(doc) for doc in texts]
+	corpora.MmCorpus.serialize('data/corpus.mm', bow_corpus)
 
 	## apply LDA
-	lda = gensim.models.ldamodel.LdaModel(bow_corpus, num_topics=2, id2word = dictionary, passes=20)
+	lda = gensim.models.ldamodel.LdaModel(bow_corpus, num_topics=3, id2word = dictionary, passes=20)
 	lda_corpus = lda[bow_corpus]
 
+	lda.save('data/document.lda')
+	print("lda saved in %s " % 'data/document.lda')
+
+	print list(lda_corpus)
 	return lda_corpus
 
 def clusttering(lda_corpus):
 
-	x = [x[1] for x,_ in lda_corpus]
-	y = [y[1] for _,y in lda_corpus]
-	x = np.array(x)
-	y = np.array(y)
-	matrix = np.vstack((x,y)).T
+	matrix = [[x[1] for x in row] for row in lda_corpus]
+	matrix=np.array(matrix)
+	print matrix
+
 	print('LDA matrix shape:', matrix.shape)
 
-	km = KMeans(n_clusters=2, init='k-means++', max_iter=100, n_init=4, verbose=False, random_state=10)
+	km = KMeans(n_clusters=3, init='k-means++', max_iter=100, n_init=4, verbose=False, random_state=10)
 	km.fit(matrix)
 	print(km.labels_)
 
