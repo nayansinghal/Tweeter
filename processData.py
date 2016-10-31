@@ -66,7 +66,6 @@ def filter_lang(lang, document):
 
 def preprocess(s, lowercase=False):
 
-	print s
 	tokens = tokenize(s)
 	if lowercase:
 		tokens = [token if emoticon_re.search(token) else token.lower() for token in tokens]
@@ -74,28 +73,29 @@ def preprocess(s, lowercase=False):
 
 # Remove stop words
 stoplist_tw=['amp','get','got','hey','hmm','hoo','hop','iep','let','ooo','par',
-			'pdt','pln','pst','wha','yep','yer','aest','didn','nzdt','via',
+			'pdt','pln','pst','wha','yep','yer','yet','aest','didn','nzdt','via',
 			'one','com','new','like','great','make','top','awesome','best',
 			'good','wow','yes','say','yay','would','thanks','thank','going',
 			'new','use','should','could','best','really','see','want','nice',
-			'while','know', 'rt', 'via', 'it', 'u']
+			'while','know', 'rt', 'via', 'it', 'u', 'c', 'co', 'http', 'w', 'r', '1', '2', '3',
+			'gt', 'v', 'It', 'e', 'k', 'gg']
 
 punctuation = list(string.punctuation)
 stop = set(stopwords.words('english') + stoplist_tw) 
 exclude = set(string.punctuation)
 lemma = WordNetLemmatizer()
 
-def clean(s):
-	s = s.lower()
-	stop_free = " ".join([i for i in s.lower().split() if i not in stop])
-	punc_free = ''.join(ch for ch in stop_free if ch not in exclude)
-	normalized = " ".join(lemma.lemmatize(word) for word in punc_free.split())
-	return normalized
+
+def clean(text):
+	text=re.sub('[^a-z0-9 ]',' ',text.lower())
+	text=re.sub('  +',' ', text).strip()
+	stop_free = [i for i in text.split(' ') if i not in stop]
+	normalized = [lemma.lemmatize(word) for word in stop_free]
+	return ' '.join(normalized)
 
 def processData(fname):
 
 	texts = []
-	count = 0
 	with open(fname, 'r') as f:
 
 		for line in f:
@@ -123,7 +123,7 @@ def processData(fname):
 	corpora.MmCorpus.serialize('output/corpus.mm', bow_corpus)
 
 	## apply LDA
-	lda = gensim.models.ldamodel.LdaModel(bow_corpus, num_topics=3, id2word = dictionary, passes=20)
+	lda = gensim.models.ldamodel.LdaModel(bow_corpus, num_topics=20, id2word = dictionary, passes=20)
 	lda_corpus = lda[bow_corpus]
 
 	lda.save('output/document.lda')
@@ -139,7 +139,7 @@ def clusttering(lda_corpus):
 
 	print('LDA matrix shape:', matrix.shape)
 
-	km = KMeans(n_clusters=3, init='k-means++', max_iter=100, n_init=4, verbose=False, random_state=10)
+	km = KMeans(n_clusters=20, init='k-means++', max_iter=100, n_init=4, verbose=False, random_state=10)
 	km.fit(matrix)
 	print(km.labels_)
 
