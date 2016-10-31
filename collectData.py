@@ -38,6 +38,7 @@ class MyListener(StreamListener):
 		self.outfile = "%s/stream_%s.json" % (data_dir, query_fname)
 
 	def on_data(self, data):
+		print "1"
 		try:
 			with open(self.outfile, 'a') as f:
 				f.write(data)
@@ -45,7 +46,7 @@ class MyListener(StreamListener):
 				return True
 		except BaseException as e:
 			print("Error on_data: %s" % str(e))
-			time.sleep(5)
+			time.sleep(6)
 		return True
 
 	def on_error(self, status):
@@ -55,7 +56,6 @@ class MyListener(StreamListener):
 
 ## Convert file name into a safe string
 def format_filename(fname):
-
 	return ''.join(convert_valid(one_char) for one_char in fname)
 
 ## Convert character into '_' if invalid
@@ -81,7 +81,9 @@ def collectData():
 	api = tweepy.API(auth)
 
 	twitter_stream = Stream(auth, MyListener(args.data_dir, args.query))
-	twitter_stream.filter(track=[args.query])
+	print "reached"
+	twitter_stream.filter(track=[args.query], stall_warnings = True)
+	print "2"
 
 if __name__ == '__main__':
 	
