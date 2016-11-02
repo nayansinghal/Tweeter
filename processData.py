@@ -123,7 +123,7 @@ def processData(fname):
 	corpora.MmCorpus.serialize('output/corpus.mm', bow_corpus)
 
 	## apply LDA
-	lda = gensim.models.ldamodel.LdaModel(bow_corpus, num_topics=20, id2word = dictionary, passes=20)
+	lda = gensim.models.ldamodel.LdaModel(bow_corpus, num_topics=3, id2word = dictionary, passes=20)
 	lda_corpus = lda[bow_corpus]
 
 	lda.save('output/document.lda')
@@ -139,7 +139,7 @@ def clusttering(lda_corpus):
 
 	print('LDA matrix shape:', matrix.shape)
 
-	km = KMeans(n_clusters=20, init='k-means++', max_iter=100, n_init=4, verbose=False, random_state=10)
+	km = KMeans(n_clusters=4, init='k-means++', max_iter=100, n_init=4, verbose=False, random_state=10)
 	km.fit(matrix)
 	print(km.labels_)
 
