@@ -20,7 +20,7 @@ import numpy as np
 import sys
 
 # General plotting function for the different information extracted
-def plot_tweets_per_category(category, title, x_title, y_title, top_n=5, output_filename="plot.png"):
+def plot_tweets_per_category(category, title, x_title, y_title, top_n=5, output_filename="plot.png", rotation = 45):
 	"""
 	:param category: Category plotted, can be tweets users, tweets language, tweets country etc ..
 	:param title: Title of the plot
@@ -36,6 +36,37 @@ def plot_tweets_per_category(category, title, x_title, y_title, top_n=5, output_
 	ax.set_ylabel(y_title)
 	ax.set_title(title)
 	tweets_by_cat[:top_n].plot(ax=ax, kind='bar')
+	plt.setp(ax.get_xticklabels(), rotation= rotation, fontsize=10)
+	fig.savefig(output_filename)
+	fig.show()
+
+def plot_pie(category, title, x_title, y_title, top_n=5, output_filename="plot.png"):
+	"""
+	:param category: Category plotted, can be tweets users, tweets language, tweets country etc ..
+	:param title: Title of the plot
+	:param x_title: List of the items in x
+	:param y_title: Title of the variable plotted
+	:return: a plot that we can save as pdf or png instead of displaying to the screen
+	"""
+	tweets = category.value_counts()
+	tweets = tweets[:top_n]
+	labels = []
+	sizes = []
+	for fl in list(tweets.iteritems()):
+		labels.append(fl[0])
+		sizes.append(int(fl[1]))
+
+	labels.append('other')
+	sizes.append(1000)
+	
+	colors = ['yellowgreen', 'gold', 'lightskyblue', 'lightcoral', 'red']
+	explode = (0.0, 0.1, 0.1)  # only "explode" the 2nd slice (i.e. 'Hogs')
+
+	fig, ax = plt.subplots()
+	ax.pie(sizes, labels=labels, explode = explode, colors = colors,
+		autopct='%1.1f%%', shadow=True, startangle=90, labeldistance=1.2)
+	ax.axis('equal')
+	ax.legend(loc='lower right',fontsize=7)
 	fig.savefig(output_filename)
 	fig.show()
 
@@ -53,7 +84,10 @@ def plot_distribution(category, title, x_title, y_title, output_filename="plot.p
 		ax.set_xlabel(x_title)
 		ax.set_ylabel(y_title)
 		ax.set_title(title)
-		sns.distplot(category.values, rug=True, hist=True);
+		
+		for idx, value in enumerate(category.values[:50]):
+			print str(idx) + " " + str(value)
+		sns.distplot(category.values[:50], rug=True, hist=True);
 		fig.savefig(output_filename)
 
 def plot(tweets):
@@ -71,33 +105,36 @@ def plot(tweets):
 def processData(fname):
 
 	texts = []
+	count  = 0
 	with open(fname, 'r') as f:
 
 		for line in f:
 			try:
+				count += 1
 				tweet = json.loads(line)
-				tweet['created_at']
 				texts.append(tweet)
 			except:
 				continue
 
+	print count
+	print len(texts)
 	# Create the dataframe we will use
 	tweets = pd.DataFrame()
 	# We want to know when a tweet was sent
 	tweets['created_at'] = map(lambda tweet: time.strftime('%Y-%m-%d %H:%M:%S', time.strptime(tweet['created_at'],'%a %b %d %H:%M:%S +0000 %Y')), texts)
 	# Who is the tweet owner
-	tweets['user'] = map(lambda tweet: tweet['user']['screen_name'], texts)
+	tweets['user'] = map(lambda tweet: tweet['user']['screen_name'] if tweet['user'] != None else None, texts)
 	# How many follower this user has
-	tweets['user_followers_count'] = map(lambda tweet: tweet['user']['followers_count'], texts)
+	tweets['user_followers_count'] = map(lambda tweet: tweet['user']['followers_count'] if "followers_count" in tweet and tweet['user'] != None and tweet['user']['followers_count'] != None else None, texts)
 	# What is the tweet's content
 	tweets['text'] = map(lambda tweet: tweet['text'].encode('utf-8'), texts)
 	# If available what is the language the tweet is written in
 	tweets['lang'] = map(lambda tweet: tweet['lang'], texts)
 	# If available, where was the tweet sent from ?
-	tweets['Location'] = map(lambda tweet: tweet['place']['country'] if tweet['place'] != None else None, texts)
+	tweets['Location'] = map(lambda tweet: tweet['place']['country'] if "place" in tweet and tweet['place'] != None else None, texts)
 	# How many times this tweet was retweeted and favorited
-	tweets['retweet_count'] = map(lambda tweet: tweet['retweet_count'], texts)
-	tweets['favorite_count'] = map(lambda tweet: tweet['favorite_count'], texts)
+	tweets['retweet_count'] = map(lambda tweet: tweet['retweet_count'] if "retweet_count" in tweet else 0, texts)
+	tweets['favorite_count'] = map(lambda tweet: tweet['favorite_count'] if "favorite_count" in tweet else 0, texts)
 
 	print tweets.head()
 
@@ -111,7 +148,7 @@ def processData(fname):
 
 	return tweets
 
-def transformation(tweet):
+def transformation(tweets):
 
 	df = pd.DataFrame(tweets['created_at'].value_counts(), columns=['number_tweets'])
 	df['date'] = df.index
@@ -123,9 +160,17 @@ def transformation(tweet):
 	tweet_growth = grouped_tweets.sum()
 	tweet_growth['days']= tweet_growth.index
 
-	tweet_growth
+	import numpy as np
+	fig = plt.figure()
+	ax = plt.subplot(111)
+	x_pos = np.arange(len(tweet_growth['days'].values))
+	ax.bar(x_pos, tweet_growth['number_tweets'].values, align='center')
+	ax.set_xticks(x_pos)
+	ax.set_title('#mozfest hashtag growth')
+	ax.set_ylabel("number tweets")
+	ax.set_xticklabels(tweet_growth['days'].values)
+	fig.savefig('mozfest_growth.png')
 
-	plot(tweet_growth)
 
 def wordCloud(tweet):
 	text = " ".join(tweets['text'].values.astype(str))
@@ -148,26 +193,31 @@ if __name__ == '__main__':
 	fname = os.path.join(dir_path, sys.argv[1])
 	tweets = processData(fname)
 
-	plot_tweets_per_category(tweets['lang'], "#airbnb by Language", 
+	
+	plot_pie(tweets['lang'], "#gamergate by Language", 
 							 "Language", 
 							 "Number of Tweets", 
-							 2000,
-							 "output/airbnb_per_language.png")
+							 2,
+							 "output/gamergateb_per_language.png")
 
-	plot_tweets_per_category(tweets['Location'], 
-							 "#airbnb by Location", 
+	plot_pie(tweets['Location'], 
+							 "#gamergate by Location", 
 							 "Location", 
-							 "Number of Tweets", 2000,
-							 "output/airbnbt_per_location.png")
+							 "Number of Tweets", 5,
+							 "output/gamergate_per_location.png")
 
 	plot_tweets_per_category(tweets['user'], 
-							 "#airbnb active users", 
+							 "#gamergate active users", 
 							 "Users", 
-							 "Number of Tweets", 20,
-							 "output/airbnb_users.png")
+							 "Number of Tweets", 10,
+							 "output/gamergate_users.png", 20)
+	
 
+	print len(tweets['retweet_count'])
 	plot_distribution(tweets['retweet_count'], 
-					  "#airbnb retweets distribution", "", "",
-					  "output/retweets_distribution.png")
+					  "#gamergate retweets distribution", "retweet", "Frequency Distribution",
+					  "output/gamergate_retweets_distribution.png")
+
 
 	wordCloud(tweets)
+	transformation(tweets)
